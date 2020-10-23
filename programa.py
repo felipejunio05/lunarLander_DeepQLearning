@@ -1,5 +1,7 @@
+from time import time
+
+
 def train():
-    global graphic
     global gym_render
     global agent_activation
 
@@ -37,11 +39,11 @@ def train():
             eps_history.append(agent.epsilon)
 
             state = new_state
-            print('episode: %i' % i, 'scores %.2f' % score, 'average_score %.2f' % avg_score,
-                  'epsilon %2f' % agent.epsilon)
+            print('episode: %i' % i, 'scores %.2f' % score, 'average_score %.2f' % avg_score, 'epsilon %2f' % agent.epsilon)
 
     agent.save_model()
-    app.after_cancel(pid_train)
+    app.after_cancel(pid_render[0])
+    app.after_cancel(pid_render[1])
     app.destroy()
 
 
@@ -56,9 +58,8 @@ def disableViewGym():
     rendering.Viewer.__init__ = constructor
 
 
-def frameUpdater():
+def frameUpdater1():
     global pid_render
-    global graphic
 
     if gym_render is not None:
         imgar = Image.fromarray(gym_render)
@@ -67,10 +68,16 @@ def frameUpdater():
         app.frame_gym.imgtk = imgtk
         app.frame_gym.configure(image=imgtk, borderwidth=0, highlightthickness=0)
 
+    pid_render[0] = app.after(1, func=frameUpdater1)
+
+
+def frameUpdater2():
+    global pid_render
+
     if len(agent_activation[0]) > 0:
         app.frame_model.activate(*agent_activation)
 
-    pid_render = app.after(1, func=frameUpdater)
+    pid_render[1] = app.after(250, func=frameUpdater2)
 
 
 if __name__ == "__main__":
@@ -84,16 +91,16 @@ if __name__ == "__main__":
     from threading import Thread
     from PIL import Image, ImageTk
 
-    agent_activation = [[], [], []]
+    agent_activation = [[], [], [], []]
 
-    graphic = [None, True]
     gym_render = None
-    pid_render = None
+    pid_render = [None, None]
 
     app = App()
 
     th_train = Thread(target=train, args=(), daemon=True)
     th_train.start()
 
-    frameUpdater()
+    frameUpdater1()
+    frameUpdater2()
     app.mainloop()
