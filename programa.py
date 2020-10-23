@@ -1,4 +1,11 @@
-from time import time
+import os
+import gym
+
+from DQN import Agent
+from Interface import App
+from threading import Thread
+from PIL import Image, ImageTk
+from numpy import mean as npy_mean
 
 
 def train():
@@ -35,7 +42,7 @@ def train():
 
             score += reward
             scores.append(score)
-            avg_score = np.mean(scores[-100:])
+            avg_score = npy_mean(scores[-100:])
             eps_history.append(agent.epsilon)
 
             state = new_state
@@ -81,16 +88,6 @@ def frameUpdater2():
 
 
 if __name__ == "__main__":
-    import os
-    import numpy as np
-    import gym
-    import threading
-
-    from DQN import Agent
-    from Interface import App
-    from threading import Thread
-    from PIL import Image, ImageTk
-
     agent_activation = [[], [], [], []]
 
     gym_render = None

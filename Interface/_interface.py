@@ -9,7 +9,7 @@ __all__ = ["App"]
 
 
 class Draw(Canvas):
-    def __init__(self, master, **kw) -> object:
+    def __init__(self, master, **kw):
         Canvas.__init__(self, master, **kw)
 
         self.configure(borderwidth=0, highlightthickness=0)
@@ -78,9 +78,9 @@ class Draw(Canvas):
 
                 for k in range(len(self.nodes[i + 1])):
                     if i + 1 != 3:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 175, self.nodes[i][j][1], self.nodes[i][k][0]+5, self.nodes[i][k][1], fill="gray"))
+                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 175, self.nodes[i][j][1], self.nodes[i][k][0]+7, self.nodes[i][k][1], fill="gray"))
                     else:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0]+6, self.nodes[i][j][1], self.nodes[i + 1][k][0]-5,  self.nodes[i + 1][k][1], fill="gray"))
+                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0]+6, self.nodes[i][j][1], self.nodes[i + 1][k][0]-7,  self.nodes[i + 1][k][1], fill="gray"))
 
     def drawNeurons(self):
         x = 30
