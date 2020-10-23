@@ -64,10 +64,10 @@ class Agent:
         self.batch_size = batch_size
         self.model_file = fname
         self.memory = Replay(mem_size, input_dims)
-        self.q_eval = self.build_dqn(lr, n_actions, *input_dims, 16, 16)
+        self.q_eval = self.build_dqn(lr, n_actions, *input_dims, 32, 32, 32)
 
-    def build_dqn(self, lr, n_actions, input_dims, fc1_dims, fc2_dims):
-        return NeuralNetwork(input_dims, fc1_dims, fc2_dims, n_actions, lr)
+    def build_dqn(self, lr, n_actions, input_dims, fc1_dims, fc2_dims, fc3_dims):
+        return NeuralNetwork(input_dims, fc1_dims, fc2_dims, fc3_dims, n_actions, lr)
 
     def store_transition(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)
@@ -102,11 +102,10 @@ class Agent:
 
 
 class NeuralNetwork:
-    def __init__(self, n_states, h1_layer, h2_layer, n_actions, lr):
-        self.activation_h1 = []
-        self.activation_h2 = []
-        self.activation_output = []
+    def __init__(self, n_states, h1_layer, h2_layer, h3_layer, n_actions, lr):
+
         self.optimizer = tf.optimizers.Adam(lr)
+        self.activation = [[], [], [], []]
 
         self.weights = {'F_1': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(n_states, h1_layer)), name="F_1/W"),
                                 tf.Variable(tf.zeros(shape=(h1_layer, )), name="F_1/B")],
@@ -114,8 +113,11 @@ class NeuralNetwork:
                         'F_2': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(h1_layer, h2_layer)), name="F_2/W"),
                                  tf.Variable(tf.zeros(shape=(h2_layer, )), name="F_2/B")],
 
-                        'F_3': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(h2_layer, n_actions)), name="F_3/W"),
-                                tf.Variable(tf.zeros(shape=(n_actions, )), name="F_3/B")]}
+                        'F_3': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(h2_layer, h3_layer)), name="F_3/W"),
+                                tf.Variable(tf.zeros(shape=(h3_layer,)), name="F_3/B")],
+
+                        'F_4': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(h3_layer, n_actions)), name="F_4/W"),
+                                tf.Variable(tf.zeros(shape=(n_actions, )), name="F_4/B")]}
 
         self.model_base = tf.keras.Sequential([tf.keras.layers.Dense(h1_layer, activation="relu", input_dim=n_states),
                                                 tf.keras.layers.Dense(h2_layer, activation="relu"),
@@ -132,12 +134,17 @@ class NeuralNetwork:
             H_02_OUTPUT = tf.nn.relu(H_02_INPUT + self.weights['F_2'][1], name="FC_02")
 
         with tf.name_scope("FC_3") as scope:
-            Y_PRED = tf.matmul(H_02_OUTPUT, self.weights['F_3'][0]) + self.weights['F_3'][1]
+            H_03_INPUT = tf.matmul(H_02_OUTPUT, self.weights['F_3'][0])
+            H_03_OUTPUT = tf.nn.relu(H_03_INPUT + self.weights['F_3'][1], name="FC_03")
+
+        with tf.name_scope("FC_4") as scope:
+            Y_PRED = tf.matmul(H_03_OUTPUT, self.weights['F_4'][0]) + self.weights['F_4'][1]
 
         if not train:
-            self.activation_h1 = H_01_OUTPUT[0].numpy()
-            self.activation_h2 = [H_02_OUTPUT[0].numpy(), (H_02_OUTPUT * self.weights['F_2'][0]).numpy()]
-            self.activation_output = [Y_PRED[0].numpy(), (Y_PRED * self.weights['F_3'][0]).numpy()]
+            self.activation[0] = H_01_OUTPUT[0].numpy()
+            self.activation[1] = [H_02_OUTPUT[0].numpy(), (H_02_OUTPUT * self.weights['F_2'][0]).numpy()]
+            self.activation[2] = [H_03_OUTPUT[0].numpy(), (H_03_OUTPUT * self.weights['F_3'][0]).numpy()]
+            self.activation[3] = [Y_PRED[0].numpy(), (Y_PRED * self.weights['F_4'][0])]
 
         return Y_PRED
 
@@ -156,14 +163,6 @@ class NeuralNetwork:
         grads = tape.gradient(f_loss, weights)
         self.optimizer.apply_gradients(zip(grads, weights))
 
-    def get_weights(self):
-        weights = []
-
-        for key in self.weights.keys():
-            weights.extend(self.weights[key])
-
-        return weights
-
     def predict(self, x_value, learning=False):
         if learning:
             y_pred = self.fullyConneted(x_value, train=True).numpy()
@@ -172,8 +171,19 @@ class NeuralNetwork:
 
         return y_pred
 
+    def get_weights(self):
+        weights = []
+
+        for key in self.weights.keys():
+            weights.extend(self.weights[key])
+
+        return weights
+
+    def getActivation(self):
+        return self.activation
+
     def load_model(self, file):
-        self.model_base = tf.keras.models.load_model(file)
+        self.__model_base = tf.keras.models.load_model(file)
 
         for i, k in zip(range(len(self.model_base.layers)), self.weights.keys()):
             w, b = self.model_base.layers[i].get_weights()
@@ -181,6 +191,6 @@ class NeuralNetwork:
 
     def save(self, file):
         for i, k in zip(range(len(self.model_base.layers)), self.weights.keys()):
-            self.model_base.layers[i].set_weights([self.weights[k][0].numpy(), self.weights[k][1].numpy()])
+            self.__model_base.layers[i].set_weights([self.weights[k][0].numpy(), self.weights[k][1].numpy()])
 
-        self.model_base.save(file)
+        self.__model_base.save(file)
