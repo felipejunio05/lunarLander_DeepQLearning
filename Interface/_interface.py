@@ -4,15 +4,12 @@ from tkinter import Frame
 from tkinter import Canvas
 from tkinter import PhotoImage
 
-from Interface import H1_NEURON_SCREEN_POS
-from Interface import H2_NEURON_SCREEN_POS
-from Interface import OT_NEURON_SCREEN_POS
 
 __all__ = ["App"]
 
 
-class Node(Canvas):
-    def __init__(self, master, **kw):
+class Draw(Canvas):
+    def __init__(self, master, **kw) -> object:
         Canvas.__init__(self, master, **kw)
 
         self.configure(borderwidth=0, highlightthickness=0)
@@ -25,15 +22,16 @@ class Node(Canvas):
 
         self.nodes = []
         self.connections = []
-        self.activation = []
+        self.activation = [{}, {}]
 
         self.create_image(0, 0, image=self.img_model, anchor="nw")
         self.drawNeurons()
         self.drawConnections()
 
-    def activate(self, lh1=[], lh2=[], lh3=[], lout=[]):
-        if self.activation:
-            self.clearActivation()
+    def activate(self, lh1, lh2, lh3, lout):
+        self.clearActivation()
+
+        LAYER_3 = False
 
         for i in range(lh1.shape[0]):
             if lh1[i] >= 0.56:
@@ -41,28 +39,24 @@ class Node(Canvas):
                 self.activationVertex(i, 0, lh2[1])
 
             elif (lh1[i] > 0) and (lh1[i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[0][i], False))
+                self.activation.append(self.drawActivation(*self.nodes[0][i], True))
                 self.activationVertex(i, 0, lh2[1])
 
-        for i in range(lh2[0].shape[0]):
             if lh2[0][i] >= 0.56:
                 self.activation.append(self.drawActivation(*self.nodes[1][i], False))
                 self.activationVertex(i, 1, lh3[1])
 
             elif (lh2[0][i] > 0) and (lh2[0][i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[1][i], False))
+                self.activation.append(self.drawActivation(*self.nodes[1][i], True))
                 self.activationVertex(i, 1, lh3[1])
 
-        LAYER_3 = False
-
-        for i in range(lh3[0].shape[0]):
             if lh3[0][i] >= 0.56:
                 self.activation.append(self.drawActivation(*self.nodes[2][i], False))
                 self.activationVertex(i, 2, lout[1])
                 LAYER_3 = True
 
             elif (lh3[0][i] > 0) and (lh3[0][i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[2][i], False))
+                self.activation.append(self.drawActivation(*self.nodes[2][i], True))
                 self.activationVertex(i, 2, lout[1])
 
                 LAYER_3 = True
@@ -98,6 +92,16 @@ class Node(Canvas):
 
             for j in range(32):
                 self.create_image(x, y, image=self.img_disable)
+
+                id_1 = self.create_image(x, y, image=self.img_enable_1)
+                id_2 = self.create_image(x, y, image=self.img_enable_2)
+
+                self.itemconfig(id_1, state='hidden')
+                self.itemconfig(id_2, state='hidden')
+
+                self.activation[0][f"{x}-{y}"] = id_1
+                self.activation[1][f"{x}-{y}"] = id_2
+
                 self.nodes[i].append([x, y])
                 y += 28
 
@@ -109,6 +113,16 @@ class Node(Canvas):
 
         for i in range(4, 8):
             self.create_image(x, y, image=self.img_disable)
+
+            id_1 = self.create_image(x, y, image=self.img_enable_1)
+            id_2 = self.create_image(x, y, image=self.img_enable_2)
+
+            self.itemconfig(id_1, state='hidden')
+            self.itemconfig(id_2, state='hidden')
+
+            self.activation[0][f"{x}-{y}"] = id_1
+            self.activation[1][f"{x}-{y}"] = id_2
+
             self.nodes[-1].append([x, y])
 
             y += 100
@@ -116,11 +130,9 @@ class Node(Canvas):
     def drawActivation(self, x, y, partial):
 
         if not partial:
-            objId = self.create_image(x, y, image=self.img_enable_2)
+            self.itemconfig(self.activation[0][f"{x}-{y}"], state="normal")
         else:
-            objId = self.create_image(x, y, image=self.img_enable_1)
-
-        return objId
+            self.itemconfig(self.activation[1][f"{x}-{y}"], state="normal")
 
     def activationVertex(self, neuron, layer, values):
 
@@ -130,10 +142,11 @@ class Node(Canvas):
 
     def clearActivation(self):
         if self.activation:
-            for i in range(len(self.activation)):
-                self.delete(self.activation[i])
+            for nId in self.activation[0].values():
+                self.itemconfig(nId, state="hidden")
 
-            self.activation = []
+            for nId in self.activation[1].values():
+                self.itemconfig(nId, state="hidden")
 
         for i in range(len(self.connections)):
             for j in range(len(self.connections[i])):
@@ -152,7 +165,7 @@ class App(Tk):
         w_s = self.winfo_screenwidth()  # width of the screen
         h_s = self.winfo_screenheight()
 
-        x, y = (w_s//2) - (w//2), (h_s//2) - (h//2)
+        x, y = ((h_s//2) - (h//2) - 20), ((w_s//2) - (w//2) - 30)
         self.geometry(f"{w}x{h}+{x}+{y}")
 
         self.title("Lunar Lander - Deep Q-Learning")
@@ -166,4 +179,4 @@ class App(Tk):
         self.frame_gym = Label(self.primary)
         self.frame_gym.place(x=0, y=0)
 
-        self.frame_model = Node(self.secondary, width=600, height=920)
+        self.frame_model = Draw(self.secondary, width=600, height=920)
