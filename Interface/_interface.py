@@ -1,3 +1,4 @@
+from numpy import absolute
 from tkinter import Tk
 from tkinter import Label
 from tkinter import Frame
@@ -24,50 +25,71 @@ class Draw(Canvas):
         self.connections = []
         self.activation = [{}, {}]
 
+        self.__auxOutput = None
+
         self.create_image(0, 0, image=self.img_model, anchor="nw")
         self.drawNeurons()
         self.drawConnections()
 
     def activate(self, lh1, lh2, lh3, lout):
-        self.clearActivation()
-
         LAYER_3 = False
 
         for i in range(lh1.shape[0]):
             if lh1[i] >= 0.56:
-                self.activation.append(self.drawActivation(*self.nodes[0][i], False))
+                self.drawActivation(*self.nodes[0][i], 0)
                 self.activationVertex(i, 0, lh2[1])
 
             elif (lh1[i] > 0) and (lh1[i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[0][i], True))
+                self.drawActivation(*self.nodes[0][i], 1)
                 self.activationVertex(i, 0, lh2[1])
 
+            else:
+                self.drawActivation(*self.nodes[0][i], 2)
+                self.activationVertex(i, 0, lh2[1], False)
+
             if lh2[0][i] >= 0.56:
-                self.activation.append(self.drawActivation(*self.nodes[1][i], False))
+                self.drawActivation(*self.nodes[1][i], 0)
                 self.activationVertex(i, 1, lh3[1])
 
             elif (lh2[0][i] > 0) and (lh2[0][i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[1][i], True))
+                self.drawActivation(*self.nodes[1][i], 1)
                 self.activationVertex(i, 1, lh3[1])
 
+            else:
+                self.drawActivation(*self.nodes[1][i], 2)
+                self.activationVertex(i, 1, lh3[1], False)
+
             if lh3[0][i] >= 0.56:
-                self.activation.append(self.drawActivation(*self.nodes[2][i], False))
+                self.drawActivation(*self.nodes[2][i], 0)
                 self.activationVertex(i, 2, lout[1])
+
                 LAYER_3 = True
 
             elif (lh3[0][i] > 0) and (lh3[0][i] < 0.56):
-                self.activation.append(self.drawActivation(*self.nodes[2][i], True))
+                self.drawActivation(*self.nodes[2][i], 1)
                 self.activationVertex(i, 2, lout[1])
 
                 LAYER_3 = True
+            else:
+                self.drawActivation(*self.nodes[2][i], 2)
+                self.activationVertex(i, 2, lout[1], False)
 
         if LAYER_3:
             IDX_OUTPUT = lout[0].argmax()
 
+            if self.__auxOutput is not None:
+                self.drawActivation(*self.nodes[3][self.__auxOutput], 2)
+
             if lout[0][IDX_OUTPUT] >= 0.56:
-                self.activation.append(self.drawActivation(*self.nodes[3][IDX_OUTPUT], False))
+                self.drawActivation(*self.nodes[3][IDX_OUTPUT], 0)
+
+            elif (lout[0][IDX_OUTPUT] > 0) and (lout[0][IDX_OUTPUT] < 0.56):
+                self.drawActivation(*self.nodes[3][IDX_OUTPUT], 1)
+
             else:
-                self.activation.append(self.drawActivation(*self.nodes[3][IDX_OUTPUT], True))
+                self.drawActivation(*self.nodes[3][IDX_OUTPUT], 2)
+
+            self.__auxOutput = IDX_OUTPUT
 
     def drawConnections(self):
         for i in range(len(self.nodes) - 1):
@@ -96,11 +118,11 @@ class Draw(Canvas):
                 id_1 = self.create_image(x, y, image=self.img_enable_1)
                 id_2 = self.create_image(x, y, image=self.img_enable_2)
 
-                self.itemconfig(id_1, state='hidden')
-                self.itemconfig(id_2, state='hidden')
+                self.itemconfig(id_1, state="hidden")
+                self.itemconfig(id_2, state="hidden")
 
-                self.activation[0][f"{x}-{y}"] = id_1
-                self.activation[1][f"{x}-{y}"] = id_2
+                self.activation[0][(x, y)] = id_1
+                self.activation[1][(x, y)] = id_2
 
                 self.nodes[i].append([x, y])
                 y += 28
@@ -117,41 +139,51 @@ class Draw(Canvas):
             id_1 = self.create_image(x, y, image=self.img_enable_1)
             id_2 = self.create_image(x, y, image=self.img_enable_2)
 
-            self.itemconfig(id_1, state='hidden')
-            self.itemconfig(id_2, state='hidden')
+            self.itemconfig(id_1, state="hidden")
+            self.itemconfig(id_2, state="hidden")
 
-            self.activation[0][f"{x}-{y}"] = id_1
-            self.activation[1][f"{x}-{y}"] = id_2
+            self.activation[0][(x, y)] = id_1
+            self.activation[1][(x, y)] = id_2
 
             self.nodes[-1].append([x, y])
 
             y += 100
 
-    def drawActivation(self, x, y, partial):
+    def drawActivation(self, x, y, options):
+        if options == 0:
+            if self.itemcget(self.activation[1][(x, y)], "state") == "normal":
+                self.itemconfig(self.activation[1][(x, y)], state="hidden")
 
-        if not partial:
-            self.itemconfig(self.activation[0][f"{x}-{y}"], state="normal")
+            if self.itemcget(self.activation[0][(x, y)], "state") == "hidden":
+                self.itemconfig(self.activation[0][(x, y)], state="normal")
+
+        elif options == 1:
+            if self.itemcget(self.activation[0][(x, y)], "state") == "normal":
+                self.itemconfig(self.activation[0][(x, y)], state="hidden")
+
+            if self.itemcget(self.activation[1][(x, y)], "state") == "hidden":
+                self.itemconfig(self.activation[1][(x, y)], state="normal")
+
+        elif options == 2:
+            if self.itemcget(self.activation[0][(x, y)], "state") == "normal":
+                self.itemconfig(self.activation[0][(x, y)], state="hidden")
+
+            if self.itemcget(self.activation[1][(x, y)], "state") == "normal":
+                self.itemconfig(self.activation[1][(x, y)], state="hidden")
+
+    def activationVertex(self, neuron, layer, values, enable=True):
+        if enable:
+            for j in range(values.shape[1]):
+                if absolute(values[neuron][j]) > 0:
+                    if self.itemcget(self.connections[layer][neuron][j], "fill") == "gray":
+                        self.itemconfig(self.connections[layer][neuron][j], fill="red")
+                else:
+                    if self.itemcget(self.connections[layer][neuron][j], "fill") == "red":
+                        self.itemconfig(self.connections[layer][neuron][j], fill="gray")
         else:
-            self.itemconfig(self.activation[1][f"{x}-{y}"], state="normal")
-
-    def activationVertex(self, neuron, layer, values):
-
-        for j in range(values.shape[1]):
-            if values[neuron][j] > 0:
-                self.itemconfig(self.connections[layer][neuron][j], fill="red")
-
-    def clearActivation(self):
-        if self.activation:
-            for nId in self.activation[0].values():
-                self.itemconfig(nId, state="hidden")
-
-            for nId in self.activation[1].values():
-                self.itemconfig(nId, state="hidden")
-
-        for i in range(len(self.connections)):
-            for j in range(len(self.connections[i])):
-                for k in range(len(self.connections[i][j])):
-                    self.itemconfig(self.connections[i][j][k],  fill="gray")
+            for j in range(values.shape[1]):
+                if self.itemcget(self.connections[layer][neuron][j], "fill") == "red":
+                    self.itemconfig(self.connections[layer][neuron][j], fill="gray")
 
 
 class App(Tk):

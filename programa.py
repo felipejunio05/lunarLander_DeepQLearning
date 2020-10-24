@@ -16,7 +16,7 @@ def train():
     env = gym.make("LunarLander-v2")
 
     agent = Agent(gamma=0.99, epsilon=1.0, lr=0.001, input_dims=env.observation_space.shape,
-                  n_actions=env.action_space.n, mem_size=1000000, batch_size=128, fname="Model/dqn_model_01.h5")
+                  n_actions=env.action_space.n, mem_size=1000000, batch_size=64, fname="Model/dqn_model.h5")
 
     if os.path.exists("Model/dqn_model.h5"):
         agent.load_model()
@@ -24,7 +24,7 @@ def train():
     scores = []
     eps_history = []
 
-    for i in range(500):
+    for i in range(700):
         state = env.reset()
 
         done = False
@@ -49,8 +49,6 @@ def train():
             print('episode: %i' % i, 'scores %.2f' % score, 'average_score %.2f' % avg_score, 'epsilon %2f' % agent.epsilon)
 
     agent.save_model()
-    app.after_cancel(pid_render[0])
-    app.after_cancel(pid_render[1])
     app.destroy()
 
 
@@ -75,7 +73,7 @@ def frameUpdater1():
         app.frame_gym.imgtk = imgtk
         app.frame_gym.configure(image=imgtk, borderwidth=0, highlightthickness=0)
 
-    pid_render[0] = app.after(1, func=frameUpdater1)
+    app.after(1, func=frameUpdater1)
 
 
 def frameUpdater2():
@@ -84,7 +82,7 @@ def frameUpdater2():
     if len(agent_activation[0]) > 0:
         app.frame_model.activate(*agent_activation)
 
-    pid_render[1] = app.after(250, func=frameUpdater2)
+    app.after(50, func=frameUpdater2)
 
 
 if __name__ == "__main__":

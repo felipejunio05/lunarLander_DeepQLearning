@@ -119,9 +119,8 @@ class NeuralNetwork:
                         'F_4': [tf.Variable(tf.random.uniform(minval=-1, maxval=1, shape=(h3_layer, n_actions)), name="F_4/W"),
                                 tf.Variable(tf.zeros(shape=(n_actions, )), name="F_4/B")]}
 
-        self.model_base = tf.keras.Sequential([tf.keras.layers.Dense(h1_layer, activation="relu", input_dim=n_states),
-                                                tf.keras.layers.Dense(h2_layer, activation="relu"),
-                                                tf.keras.layers.Dense(n_actions)])
+        with open("Config/Model.json") as config:
+            self.model_base = tf.keras.models.model_from_json(config.read())
 
     def fullyConneted(self, data, train=False):
 
@@ -183,7 +182,7 @@ class NeuralNetwork:
         return self.activation
 
     def load_model(self, file):
-        self.__model_base = tf.keras.models.load_model(file)
+        self.model_base = tf.keras.models.load_model(file)
 
         for i, k in zip(range(len(self.model_base.layers)), self.weights.keys()):
             w, b = self.model_base.layers[i].get_weights()
@@ -191,6 +190,6 @@ class NeuralNetwork:
 
     def save(self, file):
         for i, k in zip(range(len(self.model_base.layers)), self.weights.keys()):
-            self.__model_base.layers[i].set_weights([self.weights[k][0].numpy(), self.weights[k][1].numpy()])
+            self.model_base.layers[i].set_weights([self.weights[k][0].numpy(), self.weights[k][1].numpy()])
 
-        self.__model_base.save(file)
+        self.model_base.save(file)
