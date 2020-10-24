@@ -6,6 +6,7 @@ from Interface import App
 from threading import Thread
 from PIL import Image, ImageTk
 from numpy import mean as npy_mean
+from tkinter import TclError
 
 
 def train():
@@ -49,7 +50,10 @@ def train():
             print('episode: %i' % i, 'scores %.2f' % score, 'average_score %.2f' % avg_score, 'epsilon %2f' % agent.epsilon)
 
     agent.save_model()
+
     app.destroy()
+    app.after_cancel(pid_render[0])
+    app.after_cancel(pid_render[1])
 
 
 def disableViewGym():
@@ -66,23 +70,29 @@ def disableViewGym():
 def frameUpdater1():
     global pid_render
 
-    if gym_render is not None:
-        imgar = Image.fromarray(gym_render)
-        imgtk = ImageTk.PhotoImage(image=imgar)
+    try:
+        if gym_render is not None:
+            imgar = Image.fromarray(gym_render)
+            imgtk = ImageTk.PhotoImage(image=imgar)
 
-        app.frame_gym.imgtk = imgtk
-        app.frame_gym.configure(image=imgtk, borderwidth=0, highlightthickness=0)
+            app.frame_gym.imgtk = imgtk
+            app.frame_gym.configure(image=imgtk, borderwidth=0, highlightthickness=0)
+    except TclError as Error:
+        pass
 
-    app.after(1, func=frameUpdater1)
+    pid_render[0] = app.after(1, func=frameUpdater1)
 
 
 def frameUpdater2():
     global pid_render
 
-    if len(agent_activation[0]) > 0:
-        app.frame_model.activate(*agent_activation)
+    try:
+        if len(agent_activation[0]) > 0:
+            app.frame_model.activate(*agent_activation)
+    except TclError:
+        print("frame2")
 
-    app.after(50, func=frameUpdater2)
+    pid_render[1] = app.after(50, func=frameUpdater2)
 
 
 if __name__ == "__main__":
@@ -96,6 +106,6 @@ if __name__ == "__main__":
     th_train = Thread(target=train, args=(), daemon=True)
     th_train.start()
 
-    frameUpdater1()
-    frameUpdater2()
+    app.after(1, frameUpdater1)
+    app.after(50, frameUpdater2)
     app.mainloop()

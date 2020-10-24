@@ -5,3 +5,6 @@ __pycache__/
 
 # Pycharm Folder
 .idea/
+
+#model
+*.h5
