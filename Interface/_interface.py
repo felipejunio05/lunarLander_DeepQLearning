@@ -22,7 +22,7 @@ class Draw(Canvas):
         self.img_model = PhotoImage(file="Images/background.png")
 
         self.nodes = []
-        self.connections = []
+        self.connections = [[], [], []]
         self.activation = [{}, {}]
 
         self.__auxOutput = None
@@ -37,11 +37,11 @@ class Draw(Canvas):
         for i in range(lh1.shape[0]):
             if lh1[i] >= 0.56:
                 self.drawActivation(*self.nodes[0][i], 0)
-                self.activationVertex(i, 0, lh2[1])
+                self.activationVertex(i, 0, lh2[1], True)
 
             elif (lh1[i] > 0) and (lh1[i] < 0.56):
                 self.drawActivation(*self.nodes[0][i], 1)
-                self.activationVertex(i, 0, lh2[1])
+                self.activationVertex(i, 0, lh2[1], True)
 
             else:
                 self.drawActivation(*self.nodes[0][i], 2)
@@ -49,11 +49,11 @@ class Draw(Canvas):
 
             if lh2[0][i] >= 0.56:
                 self.drawActivation(*self.nodes[1][i], 0)
-                self.activationVertex(i, 1, lh3[1])
+                self.activationVertex(i, 1, lh3[1], True)
 
             elif (lh2[0][i] > 0) and (lh2[0][i] < 0.56):
                 self.drawActivation(*self.nodes[1][i], 1)
-                self.activationVertex(i, 1, lh3[1])
+                self.activationVertex(i, 1, lh3[1], True)
 
             else:
                 self.drawActivation(*self.nodes[1][i], 2)
@@ -61,13 +61,13 @@ class Draw(Canvas):
 
             if lh3[0][i] >= 0.56:
                 self.drawActivation(*self.nodes[2][i], 0)
-                self.activationVertex(i, 2, lout[1])
+                self.activationVertex(i, 2, lout[1], True, True)
 
                 LAYER_3 = True
 
             elif (lh3[0][i] > 0) and (lh3[0][i] < 0.56):
                 self.drawActivation(*self.nodes[2][i], 1)
-                self.activationVertex(i, 2, lout[1])
+                self.activationVertex(i, 2, lout[1], True, True)
 
                 LAYER_3 = True
             else:
@@ -93,16 +93,14 @@ class Draw(Canvas):
 
     def drawConnections(self):
         for i in range(len(self.nodes) - 1):
-            self.connections.append([])
-
             for j in range(len(self.nodes[i])):
                 self.connections[i].append([])
 
                 for k in range(len(self.nodes[i + 1])):
-                    if i + 1 != 3:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 175, self.nodes[i][j][1], self.nodes[i][k][0]+7, self.nodes[i][k][1], fill="gray"))
+                    if i != 2:
+                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0]-5, self.nodes[i + 1][k][1], fill="gray"))
                     else:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0]+6, self.nodes[i][j][1], self.nodes[i + 1][k][0]-7,  self.nodes[i + 1][k][1], fill="gray"))
+                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0]-5,  self.nodes[i + 1][k][1], fill="gray"))
 
     def drawNeurons(self):
         x = 30
@@ -151,18 +149,18 @@ class Draw(Canvas):
 
     def drawActivation(self, x, y, options):
         if options == 0:
-            if self.itemcget(self.activation[1][(x, y)], "state") == "normal":
-                self.itemconfig(self.activation[1][(x, y)], state="hidden")
-
-            if self.itemcget(self.activation[0][(x, y)], "state") == "hidden":
-                self.itemconfig(self.activation[0][(x, y)], state="normal")
-
-        elif options == 1:
             if self.itemcget(self.activation[0][(x, y)], "state") == "normal":
                 self.itemconfig(self.activation[0][(x, y)], state="hidden")
 
             if self.itemcget(self.activation[1][(x, y)], "state") == "hidden":
                 self.itemconfig(self.activation[1][(x, y)], state="normal")
+
+        elif options == 1:
+            if self.itemcget(self.activation[1][(x, y)], "state") == "normal":
+                self.itemconfig(self.activation[1][(x, y)], state="hidden")
+
+            if self.itemcget(self.activation[0][(x, y)], "state") == "hidden":
+                self.itemconfig(self.activation[0][(x, y)], state="normal")
 
         elif options == 2:
             if self.itemcget(self.activation[0][(x, y)], "state") == "normal":
@@ -171,15 +169,17 @@ class Draw(Canvas):
             if self.itemcget(self.activation[1][(x, y)], "state") == "normal":
                 self.itemconfig(self.activation[1][(x, y)], state="hidden")
 
-    def activationVertex(self, neuron, layer, values, enable=True):
+    def activationVertex(self, neuron, layer, values, enable=True, output=False):
         if enable:
             for j in range(values.shape[1]):
-                if absolute(values[neuron][j]) > 0:
-                    if self.itemcget(self.connections[layer][neuron][j], "fill") == "gray":
-                        self.itemconfig(self.connections[layer][neuron][j], fill="red")
+                if not output:
+                    if values[neuron][j] > 0:
+                        if self.itemcget(self.connections[layer][neuron][j], "fill") == "gray":
+                            self.itemconfig(self.connections[layer][neuron][j], fill="red")
                 else:
-                    if self.itemcget(self.connections[layer][neuron][j], "fill") == "red":
-                        self.itemconfig(self.connections[layer][neuron][j], fill="gray")
+                    if absolute(values[neuron][j]) > 0.56:
+                        if self.itemcget(self.connections[layer][neuron][j], "fill") == "gray":
+                            self.itemconfig(self.connections[layer][neuron][j], fill="red")
         else:
             for j in range(values.shape[1]):
                 if self.itemcget(self.connections[layer][neuron][j], "fill") == "red":
