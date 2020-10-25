@@ -141,8 +141,8 @@ class NeuralNetwork:
 
         if not train:
             self.activation[0] = H_01_OUTPUT[0].numpy()
-            self.activation[1] = [H_02_OUTPUT[0].numpy(), (H_01_OUTPUT * self.weights['F_2'][0]).numpy()]
-            self.activation[2] = [H_03_OUTPUT[0].numpy(), (H_02_OUTPUT * self.weights['F_3'][0]).numpy()]
+            self.activation[1] = [H_02_OUTPUT[0].numpy(), (tf.transpose(H_01_OUTPUT) * self.weights['F_2'][0]).numpy()]
+            self.activation[2] = [H_03_OUTPUT[0].numpy(), (tf.transpose(H_02_OUTPUT) * self.weights['F_3'][0]).numpy()]
             self.activation[3] = [Y_PRED[0].numpy(), (tf.transpose(H_03_OUTPUT) * self.weights['F_4'][0]).numpy()]
 
         return Y_PRED
