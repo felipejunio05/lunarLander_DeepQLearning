@@ -13,6 +13,7 @@ if __name__ == "__main__":
 
     lr = 0.001
     EPSILON = 1.0
+    EPISODES = 700
     GAMMA = 0.99
     MEM_SIZE = 1000000
     BATCH_SIZE = 64
@@ -27,7 +28,7 @@ if __name__ == "__main__":
     graph = Graph(SAVE_GRAPH_DIR)
     agent = Agent(lr, GAMMA, EPSILON, ACTIONS_SPACE, INPUT_DIMS, BATCH_SIZE, mem_size=MEM_SIZE, saveIn=SAVE_MODEL_DIR)
 
-    th_train = Thread(target=agent.run, args=(700, environment, app, graph), daemon=True)
+    th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
     th_train.start()
 
     app.jobs()
