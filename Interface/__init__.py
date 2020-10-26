@@ -1,1 +1,4 @@
-from ._interface import *
+from tkinter import Canvas
+from ._interface import App
+
+
