@@ -1,10 +1,10 @@
 from numpy import absolute
 from tkinter import Tk
+from tkinter import Text
 from tkinter import Label
 from tkinter import Frame
 from tkinter import Canvas
 from tkinter import PhotoImage
-
 
 __all__ = ["App"]
 
@@ -98,9 +98,13 @@ class Draw(Canvas):
 
                 for k in range(len(self.nodes[i + 1])):
                     if i != 2:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0]-5, self.nodes[i + 1][k][1], fill="gray"))
+                        self.connections[i][j].append(
+                            self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0] - 5,
+                                             self.nodes[i + 1][k][1], fill="gray"))
                     else:
-                        self.connections[i][j].append(self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0]-5,  self.nodes[i + 1][k][1], fill="gray"))
+                        self.connections[i][j].append(
+                            self.create_line(self.nodes[i][j][0] + 7, self.nodes[i][j][1], self.nodes[i + 1][k][0] - 5,
+                                             self.nodes[i + 1][k][1], fill="gray"))
 
     def drawNeurons(self):
         x = 30
@@ -197,18 +201,41 @@ class App(Tk):
         w_s = self.winfo_screenwidth()  # width of the screen
         h_s = self.winfo_screenheight()
 
-        x, y = ((h_s//2) - (h//2) - 20), ((w_s//2) - (w//2) - 30)
+        x, y = ((h_s // 2) - (h // 2) - 20), ((w_s // 2) - (w // 2) - 30)
         self.geometry(f"{w}x{h}+{x}+{y}")
 
         self.title("Lunar Lander - Deep Q-Learning")
 
-        self.primary = Frame(self, bg="white", width=600, height=920)
-        self.primary.place(relx=0, rely=0)
+        self.first = Frame(self, bg="white", width=600, height=400)
+        self.first.place(relx=0, rely=0)
 
-        self.secondary = Frame(self, width=600, height=920)
-        self.secondary.place(x=600, y=0)
+        self.second = Frame(self, width=600, height=920)
+        self.second.place(x=600, y=0)
 
-        self.frame_gym = Label(self.primary)
+        self.third = Frame(self, bg="white", width=600, height=520)
+        self.third.place(x=0, y=400)
+
+        self.frame_gym = Label(self.first)
         self.frame_gym.place(x=0, y=0)
 
-        self.frame_model = Draw(self.secondary, width=600, height=920)
+        self.num_episode = Canvas(self.first, width=50, height=50, bg="black",  borderwidth=0, highlightthickness=0)
+        self.num_episode.place(x=0, y=0)
+        self.num_episode_id = self.num_episode.create_text(0, 0, font=("Arial", 50), text="01", fill="green",
+                                                           anchor="nw")
+
+        self.frame_model = Draw(self.second, width=600, height=920)
+
+        self.frame_graph = Label(self.third)
+        self.frame_graph.place(x=0, y=0)
+
+        self.withdraw()
+
+    def episode(self, string):
+        self.num_episode.delete(self.num_episode_id)
+        self.num_episode_id = self.num_episode.create_text(0, 0, font=("Arial", 50), text=string, fill="green",
+                                                           anchor="nw")
+
+    def close(self, p1, p2):
+        self.destroy()
+        self.after_cancel(p1)
+        self.after_cancel(p2)

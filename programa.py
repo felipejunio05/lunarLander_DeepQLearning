@@ -3,10 +3,21 @@ import gym
 
 from DQN import Agent
 from Interface import App
+
 from threading import Thread
-from PIL import Image, ImageTk
-from numpy import mean as npy_mean
 from tkinter import TclError
+from PIL import Image, ImageTk
+
+from numpy import mean as npy_mean
+from numpy import array as npy_array
+from numpy import arange as npy_arange
+from numpy import frombuffer as npy_frombuffer
+
+
+from matplotlib import use as plot_backend
+plot_backend("Agg")
+
+import matplotlib.pyplot as plt
 
 
 def train():
@@ -22,12 +33,16 @@ def train():
     if os.path.exists("Model/dqn_model.h5"):
         agent.load_model()
 
-    scores = []
-    eps_history = []
+    avg_score = []
+    figure = graph()
+
+    frameUpdater3(convertFigToArray(figure))
+    app.deiconify()
 
     for i in range(700):
         state = env.reset()
 
+        scores = []
         done = False
         score = 0
 
@@ -43,17 +58,38 @@ def train():
 
             score += reward
             scores.append(score)
-            avg_score = npy_mean(scores[-100:])
-            eps_history.append(agent.epsilon)
 
             state = new_state
-            print('episode: %i' % i, 'scores %.2f' % score, 'average_score %.2f' % avg_score, 'epsilon %2f' % agent.epsilon)
+
+        app.episode(str(i+1).zfill(2))
+        avg_score.append(npy_mean(scores[i]))
+
+        if i > 50:
+            plt.plot(npy_arange(i + 1), npy_array(avg_score), "r")
+            frameUpdater3(convertFigToArray(figure))
 
     agent.save_model()
+    app.close(*pid_render)
 
-    app.destroy()
-    app.after_cancel(pid_render[0])
-    app.after_cancel(pid_render[1])
+
+def graph():
+
+    fig = plt.figure(figsize=(6, 5))
+
+    plt.title('Desempenho do Agente')
+    plt.xlabel('Episódios')
+    plt.ylabel('Pontuação')
+
+    return fig
+
+
+def convertFigToArray(fig):
+    fig.canvas.draw()
+
+    img = npy_frombuffer(fig.canvas.tostring_rgb(), dtype="uint8")
+    img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    return img
 
 
 def disableViewGym():
@@ -77,7 +113,7 @@ def frameUpdater1():
 
             app.frame_gym.imgtk = imgtk
             app.frame_gym.configure(image=imgtk, borderwidth=0, highlightthickness=0)
-    except TclError as Error:
+    except TclError:
         pass
 
     pid_render[0] = app.after(1, func=frameUpdater1)
@@ -90,9 +126,18 @@ def frameUpdater2():
         if len(agent_activation[0]) > 0:
             app.frame_model.activate(*agent_activation)
     except TclError:
-        print("frame2")
+        pass
 
     pid_render[1] = app.after(50, func=frameUpdater2)
+
+
+def frameUpdater3(img):
+
+    imgar = Image.fromarray(img)
+    imgtk = ImageTk.PhotoImage(image=imgar)
+
+    app.frame_graph.imgtk = imgtk
+    app.frame_graph.configure(image=imgtk, borderwidth=0, highlightthickness=0)
 
 
 if __name__ == "__main__":
