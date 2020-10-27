@@ -1,8 +1,9 @@
-
 from numpy import mean
 from numpy import arange
 from numpy.random import choice
 from numpy.random import random
+
+from os.path import exists
 
 from ._replay import Replay
 from ._neuralnetwork import NeuralNetwork
@@ -85,9 +86,13 @@ class Agent:
     def load_model(self):
         self.__q_eval.load_model(self.__saveIn)
 
-    def run(self, episodes, env, view=None, graph=None):
+    def run(self, episodes, env, view=None, graph=None, load_model=None):
         avg_score = []
         epsilons = []
+
+        if load_model is not None:
+            if exists(load_model):
+                self.__q_eval.load_model(load_model)
 
         if view is not None and graph is not None:
             view.frameUpdater3(graph.plot(None, None, None, True))
