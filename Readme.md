@@ -11,9 +11,12 @@ agente é pousar o modulo lunar na região delimitada pelas bandeiras.
 
 <ul>
     <li>EPSILON -> 1.0</li>
+    <li>EPSILON_D -> 0.01</li>
+    <li>EPSILON_M -> 0.001</li>
     <li>EPISÓDIOS -> 700</li>
     <li>GAMMA -> 0.99</li>
-    <li>TAMANHO DA MEMÓRIA -> 700</li>
+    <li>TX APRENDIZAGEM -> 0.001</li>
+    <li>TAMANHO DA MEMÓRIA -> 1000000</li>
     <li>TAMANHO DO LOTE -> 64</li>
 </ul>
 
