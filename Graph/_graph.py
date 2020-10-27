@@ -59,7 +59,7 @@ class Graph:
         return img
 
     def save(self):
-        self.__figure.set_figwidth(20)
+        self.__figure.set_figwidth(10)
         self.__figure.set_figheight(8)
 
         self.__figure.savefig(self.__saveIn)
