@@ -1,7 +1,6 @@
 <h1>LUNAR LANDER - DEEP Q-LEARNING</h1>
 
-Implementação de algoritmo de aprendizagem por reforço no ambiente Lunar Lander, cujo objetivo do 
-agente é pousar o modulo lunar na região delimitada pelas bandeiras.
+Implementação do OpenAI Gym Lunar Lander com Deep Q-Learning, o objetivo do agente é pousar o modulo lunar na região delimitada pelas bandeiras.
 
 <p align="center"><img src="Model/model.gif"></p>
 
