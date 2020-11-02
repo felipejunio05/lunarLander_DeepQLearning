@@ -13,6 +13,8 @@ if __name__ == "__main__":
 
     lr = 0.001
     EPSILON = 1.0
+    EPSILON_MIN = 0.01
+    EPSILON_DECAY = 0.001
     EPISODES = 700
     GAMMA = 0.99
     MEM_SIZE = 1000000
@@ -26,7 +28,7 @@ if __name__ == "__main__":
 
     app = App()
     graph = Graph(SAVE_GRAPH_DIR)
-    agent = Agent(lr, GAMMA, EPSILON, ACTIONS_SPACE, INPUT_DIMS, BATCH_SIZE, mem_size=MEM_SIZE, saveIn=SAVE_MODEL_DIR)
+    agent = Agent(lr, GAMMA, EPSILON, EPSILON_MIN, EPSILON_DECAY, ACTIONS_SPACE, INPUT_DIMS, BATCH_SIZE, MEM_SIZE, SAVE_MODEL_DIR)
 
     th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
     th_train.start()
