@@ -45,7 +45,7 @@ class App(Tk):
 
         self.__frame_model = Draw(self.__second, width=600, height=920)
 
-        self.__frame_graph = Label(self.__third, width=600, height=520, bg="black")
+        self.__frame_graph = Label(self.__third, width=600, height=520, bg="white")
         self.__frame_graph.place(x=0, y=0)
 
         self.__pid_render = [None, None]
