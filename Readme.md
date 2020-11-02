@@ -35,6 +35,90 @@ Implementação do OpenAI Gym Lunar Lander com Deep Q-Learning, o objetivo do ag
     <li>Pacotes -> requirements.txt</li>
 </ul>
  
+<h2>COMO EXECUTAR</h2>
+
+<p>
+    Para executar com os Hiperparâmetros listados acima, basta ir no terminal, no diretorio do script e executar comando:
+</p>
+
+```shell
+python lunarLander.py
+```
+
+<p>
+    Caso contrário basta acessar o arquivo lunarLander.py e alteralos conforme as suas necessidades, veja os exemplos abaixo:
+</p>
+
+<p>
+    Alteração dos Hiperparâmetros:
+</p>
+
+
+```python
+lr = 'change here' # Taxa de Aprendizagem
+EPSILON = 'change here'
+EPSILON_MIN = 'change here'
+EPSILON_DECAY = 'change here'
+EPISODES = 'change here'
+GAMMA = 'change here'
+MEM_SIZE = 'change here'
+BATCH_SIZE = 'change here'
+```
+
+<p>
+    Alteração do caminho onde o gráfico e o modelo serão salvos:
+<p>
+
+```python
+SAVE_MODEL_DIR = 'change here'
+SAVE_GRAPH_DIR = 'change here'
+```
+
+<p>
+    Executando o treinamento sem interface:
+</p>
+
+```python
+# com interface
+th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
+
+# sem interface
+th_train = Thread(target=agent.run, args=(EPISODES, environment, graph=graph), daemon=True)
+```
+
+<p>
+   Sem geração de gráfico:
+</p>
+
+```python
+# com gráfico
+th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
+
+# sem gráfico
+th_train = Thread(target=agent.run, args=(EPISODES, environment, app), daemon=True)
+```
+
+<p>
+   Sem gráfico e interface:
+</p>
+
+```python
+# com gráfico e interface
+th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
+
+# sem gráfico e interface
+th_train = Thread(target=agent.run, args=(EPISODES, environment), daemon=True)
+```
+
+<p>
+   Carregando um modelo salvo:
+</p>
+
+```python
+LOAD_MODEL = "Model/dqn_model.h5"
+
+th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph, LOAD_MODEL), daemon=True)
+```
 
 <h2>DEMO</h2>
 
