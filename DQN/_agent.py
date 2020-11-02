@@ -12,12 +12,12 @@ __all__ = ["Agent"]
 
 
 class Agent:
-    def __init__(self, lr, gamma, epsilon, n_actions, input_dims, batch_size, epsilon_dec=1e-3, epsilon_end=1e-2, mem_size=10 ** 6, saveIn='dqn_model.h5'):
+    def __init__(self, lr, gamma, epsilon, epsilon_min, epsilon_decay, n_actions, input_dims, batch_size, mem_size, saveIn='dqn_model.h5'):
         self.__actionSpace = arange(n_actions)
         self.__gamma = gamma
         self.__epsilon = epsilon
-        self.__epsMin = epsilon_end
-        self.__epsDec = epsilon_dec
+        self.__epsMin = epsilon_min
+        self.__epsDec = epsilon_decay
         self.__batchSize = batch_size
         self.__saveIn = saveIn
         self.__memory = Replay(mem_size, input_dims)
