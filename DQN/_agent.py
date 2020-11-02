@@ -94,9 +94,11 @@ class Agent:
             if exists(load_model):
                 self.__q_eval.load_model(load_model)
 
-        if view is not None and graph is not None:
-            view.frameUpdater3(graph.plot(None, None, None, True))
+        if view is not None:
             view.deiconify()
+
+            if graph is not None:
+                view.frameUpdater3(graph.plot(None, None, None, True))
 
         for episode in range(episodes):
             state = env.reset()
@@ -120,16 +122,20 @@ class Agent:
 
                 state = new_state
 
-            if view is not None and graph is not None:
+            if graph is not None:
+                avg_score.append(mean(scores))
+                epsilons.append(self.__epsilon)
+
+                imgGraph = graph.plot(episode, epsilons, avg_score)
+
+            if view is not None:
                 view.agentActivation = self.__q_eval.getActivation()
                 view.episode(str(episode + 1).zfill(2))
 
-                epsilons.append(self.epsilon)
-                avg_score.append(mean(scores))
-                view.frameUpdater3(graph.plot(episode, epsilons, avg_score))
-
-            elif graph is not None:
-                graph.plot(episode, epsilons, avg_score)
+                if graph is not None:
+                    view.frameUpdater3(imgGraph)
+            else:
+                print(f'Episode: {episode} Score: {mean(scores):.2f} Epsilon: {self.__epsilon:.2f}')
 
         self.save_model()
 
