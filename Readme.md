@@ -46,7 +46,7 @@ python lunarLander.py
 ```
 
 <p>
-    Caso contrário basta acessar o arquivo lunarLander.py e alteralos conforme as suas necessidades, veja os exemplos abaixo:
+    Caso contrário, basta acessar o arquivo lunarLander.py e alteralos conforme as suas necessidades, veja os exemplos abaixo:
 </p>
 
 <p>
@@ -83,7 +83,14 @@ SAVE_GRAPH_DIR = 'change here'
 th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
 
 # sem interface
-th_train = Thread(target=agent.run, args=(EPISODES, environment, graph=graph), daemon=True)
+#app = App()
+
+agent.run(EPISODES, environment, graph=graph)
+
+#th_train.start()
+
+#app.jobs()
+#app.mainloop()
 ```
 
 <p>
@@ -95,6 +102,10 @@ th_train = Thread(target=agent.run, args=(EPISODES, environment, graph=graph), d
 th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
 
 # sem gráfico
+
+#SAVE_GRAPH_DIR = "Results/agent.png"
+#graph = Graph(SAVE_GRAPH_DIR)
+
 th_train = Thread(target=agent.run, args=(EPISODES, environment, app), daemon=True)
 ```
 
@@ -107,7 +118,18 @@ th_train = Thread(target=agent.run, args=(EPISODES, environment, app), daemon=Tr
 th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph), daemon=True)
 
 # sem gráfico e interface
-th_train = Thread(target=agent.run, args=(EPISODES, environment), daemon=True)
+
+#SAVE_GRAPH_DIR = "Results/agent.png"
+
+#app = App()
+#graph = Graph(SAVE_GRAPH_DIR)
+
+agent.run(EPISODES, environment)
+
+#th_train.start()
+
+#app.jobs()
+#app.mainloop()
 ```
 
 <p>
@@ -120,6 +142,46 @@ LOAD_MODEL = "Model/dqn_model.h5"
 th_train = Thread(target=agent.run, args=(EPISODES, environment, app, graph, LOAD_MODEL), daemon=True)
 ```
 
+<p>
+   Também é possivel customizar o treinamento, já que os métodos utilizados no 'agent.run()' estão públicos: 
+</p>
+
+```python
+import gym
+from DQN import Agent
+
+
+lr = 0.001
+EPSILON = 1.0
+EPSILON_MIN = 0.01
+EPSILON_DECAY = 0.001
+EPISODES = 700
+GAMMA = 0.99
+MEM_SIZE = 1000000
+BATCH_SIZE = 64
+
+env = gym.make("LunarLander-v2")
+
+INPUT_DIMS = env.observation_space.shape[0]
+ACTIONS_SPACE = env.action_space.n
+
+SAVE_MODEL_DIR = "Model/dqn_model.h5"
+
+agent = Agent(lr, GAMMA, EPSILON, EPSILON_MIN, EPSILON_DECAY, ACTIONS_SPACE, INPUT_DIMS, BATCH_SIZE, MEM_SIZE, SAVE_MODEL_DIR)
+
+for episode in range(EPISODES):
+    state = env.reset()
+    done = False
+
+    while not done:
+        action = agent.choose_action(state)
+        new_state, reward, done, info = env.step(action)
+
+        agent.store_transition(state, action, reward, new_state, done)
+        agent.learn()
+
+        state = new_state
+```
 <h2>DEMO</h2>
 
 <strong>Link:</strong> https://youtu.be/v00rulenDrY 
