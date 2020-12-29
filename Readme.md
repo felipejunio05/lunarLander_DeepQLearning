@@ -182,6 +182,12 @@ for episode in range(EPISODES):
 
         state = new_state
 ```
+
+<h2>OBSERVAÇÃO</H2>
+<p>
+     A interface desenvolvida com Tkinter não funciona adequadamente no OS Microsoft Windows, caso este seja seu OS, recomendo que faça o uso de uma máquina virtual ou de container. 
+</p>
+
 <h2>DEMO</h2>
 
 <strong>Link:</strong> https://youtu.be/v00rulenDrY 
