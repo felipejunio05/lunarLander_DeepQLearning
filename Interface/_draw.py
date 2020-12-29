@@ -64,9 +64,7 @@ class Draw(Canvas):
 
             elif (lh3[0][i] > 0) and (lh3[0][i] < 0.56):
                 self.drawActivation(*self.nodes[2][i], 1)
-                self.activationVertex(i, 2, lout[1], True, False)
 
-                LAYER_3 = True
             else:
                 self.drawActivation(*self.nodes[2][i], 2)
                 self.activationVertex(i, 2, lout[1], False)
