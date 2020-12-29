@@ -1,10 +1,15 @@
 from tensorflow import nn
+from tensorflow import math
 from tensorflow import zeros
 from tensorflow import random
 from tensorflow import matmul
 from tensorflow import losses
+from tensorflow import float32
+from tensorflow import function
+from tensorflow import constant
 from tensorflow import Variable
 from tensorflow import transpose
+from tensorflow import TensorSpec
 from tensorflow import name_scope
 from tensorflow import optimizers
 from tensorflow import GradientTape
@@ -16,73 +21,89 @@ __all__ = ["NeuralNetwork"]
 
 class NeuralNetwork:
     def __init__(self, n_states, h1_layer, h2_layer, h3_layer, n_actions, lr):
-
         self.__optimizer = optimizers.Adam(lr)
-        self.__activation = [[], [], [], []]
+        self.__activation = []
 
-        self.__weights = {'F_1': [Variable(random.uniform(minval=-1, maxval=1, shape=(n_states, h1_layer)), name="F_1/W"),
-                                Variable(zeros(shape=(h1_layer, )), name="F_1/B")],
+        self.__weights = {'F_1': [Variable(random.uniform(minval=-math.sqrt(6/n_states), maxval=math.sqrt(6/n_states), shape=(n_states, h1_layer)), name="F_1/W"),
+                                  Variable(zeros(shape=(h1_layer, )), name="F_1/B")],
 
-                        'F_2': [Variable(random.uniform(minval=-1, maxval=1, shape=(h1_layer, h2_layer)), name="F_2/W"),
-                                 Variable(zeros(shape=(h2_layer, )), name="F_2/B")],
+                          'F_2': [Variable(random.uniform(minval=-math.sqrt(6/h1_layer), maxval=math.sqrt(6/h1_layer), shape=(h1_layer, h2_layer)), name="F_2/W"),
+                                  Variable(zeros(shape=(h2_layer, )), name="F_2/B")],
 
-                        'F_3': [Variable(random.uniform(minval=-1, maxval=1, shape=(h2_layer, h3_layer)), name="F_3/W"),
-                                Variable(zeros(shape=(h3_layer,)), name="F_3/B")],
+                          'F_3': [Variable(random.uniform(minval=-math.sqrt(6/h2_layer), maxval=math.sqrt(6/h2_layer), shape=(h2_layer, h3_layer)), name="F_3/W"),
+                                  Variable(zeros(shape=(h3_layer,)), name="F_3/B")],
 
-                        'F_4': [Variable(random.uniform(minval=-1, maxval=1, shape=(h3_layer, n_actions)), name="F_4/W"),
-                                Variable(zeros(shape=(n_actions, )), name="F_4/B")]}
+                          'OUTPUT': [Variable(random.uniform(minval=-math.sqrt(6/(h3_layer + n_actions)), maxval=math.sqrt(6/(h3_layer + n_actions)), shape=(h3_layer, n_actions)), name="OUTPUT/W"),
+                                     Variable(zeros(shape=(n_actions, )), name="OUTPUT/B")]}
+
+        self.__trainable = self.__get_weights()
 
         with open("Config/Model.json") as config:
             self.__model_base = model_from_json(config.read())
 
-    def __fullyConneted(self, data, train=False):
+    @property
+    def weights(self):
+        return self.__weights
 
+    @property
+    def trainable(self):
+        return self.__trainable
+
+    @property
+    def optimizer(self):
+        return self.__optimizer
+
+    def fullyConnected(self, data):
         with name_scope("FC_1") as scope:
-            H_01_INPUT = matmul(data, self.__weights['F_1'][0])
-            H_01_OUTPUT = nn.relu(H_01_INPUT + self.__weights['F_1'][1], name="FC_01")
+            H_01_INPUT = math.add(matmul(data, self.weights['F_1'][0]), self.weights['F_1'][1])
+            H_01_OUTPUT = nn.relu(H_01_INPUT)
 
         with name_scope("FC_2") as scope:
-            H_02_INPUT = matmul(H_01_OUTPUT, self.__weights['F_2'][0])
-            H_02_OUTPUT = nn.relu(H_02_INPUT + self.__weights['F_2'][1], name="FC_02")
+            H_02_INPUT = math.add(matmul(H_01_OUTPUT, self.weights['F_2'][0]), self.weights['F_2'][1])
+            H_02_OUTPUT = nn.relu(H_02_INPUT)
 
         with name_scope("FC_3") as scope:
-            H_03_INPUT = matmul(H_02_OUTPUT, self.__weights['F_3'][0])
-            H_03_OUTPUT = nn.relu(H_03_INPUT + self.__weights['F_3'][1], name="FC_03")
+            H_03_INPUT = math.add(matmul(H_02_OUTPUT, self.weights['F_3'][0]), self.weights['F_3'][1])
+            H_03_OUTPUT = nn.relu(H_03_INPUT)
 
-        with name_scope("FC_4") as scope:
-            Y_PRED = matmul(H_03_OUTPUT, self.__weights['F_4'][0]) + self.__weights['F_4'][1]
+        with name_scope("OUTPUT") as scope:
+            OUTPUT = math.add(matmul(H_03_OUTPUT, self.weights['OUTPUT'][0]), self.weights['OUTPUT'][1])
 
-        if not train:
-            self.__activation[0] = H_01_OUTPUT[0].numpy()
-            self.__activation[1] = [H_02_OUTPUT[0].numpy(), (transpose(H_01_OUTPUT) * self.__weights['F_2'][0]).numpy()]
-            self.__activation[2] = [H_03_OUTPUT[0].numpy(), (transpose(H_02_OUTPUT) * self.__weights['F_3'][0]).numpy()]
-            self.__activation[3] = [Y_PRED[0].numpy(), (transpose(H_03_OUTPUT) * self.__weights['F_4'][0]).numpy()]
-
-        return Y_PRED
+        return OUTPUT, [H_01_OUTPUT, H_02_OUTPUT, H_03_OUTPUT, OUTPUT]
 
     @staticmethod
-    def __loss(y_true, y_pred):
-        return losses.mean_squared_error(y_true, y_pred)
+    def loss(y_true, y_pred):
+        with name_scope("LOSS") as scope:
+            MSE = losses.mean_squared_error(y_true, y_pred)
+            LOSS = math.reduce_mean(MSE)
+
+        return LOSS
+
+    @function(input_signature=[TensorSpec(shape=None, dtype=float32), TensorSpec(shape=None, dtype=float32)])
+    def training(self, x_value, y_value):
+        with GradientTape() as tape:
+            tape.watch(self.trainable)
+
+            y_pred = self.fullyConnected(x_value)[0]
+            f_loss = self.loss(y_value, y_pred)
+
+        grads = tape.gradient(f_loss, self.trainable)
+        self.optimizer.apply_gradients(zip(grads, self.trainable))
 
     def train(self, x_value, y_value):
-        weights = self.__get_weights()
+        self.training(constant(x_value), constant(y_value))
 
-        with GradientTape() as tape:
-            tape.watch(weights)
-
-            y_pred = self.__fullyConneted(x_value, train=True)
-            f_loss = self.__loss(y_value, y_pred)
-
-        grads = tape.gradient(f_loss, weights)
-        self.__optimizer.apply_gradients(zip(grads, weights))
+    @function(input_signature=[TensorSpec(shape=None, dtype=float32)])
+    def fastPredict(self, x_value):
+        return self.fullyConnected(x_value)
 
     def predict(self, x_value, learning=False):
-        if learning:
-            y_pred = self.__fullyConneted(x_value, train=True).numpy()
-        else:
-            y_pred = self.__fullyConneted(x_value, train=False).numpy()
+        output = self.fastPredict(constant(x_value))
 
-        return y_pred
+        if not learning:
+            self.__activation = output[1]
+
+        return output[0].numpy()
 
     def __get_weights(self):
         weights = []
@@ -93,14 +114,32 @@ class NeuralNetwork:
         return weights
 
     def getActivation(self):
-        return self.__activation
+
+        if len(self.__activation) > 0:
+            aux = []
+
+            for i, k in enumerate(self.__weights.keys()):
+                if k == "F_1":
+                    aux.append(self.__activation[i][0].numpy())
+                else:
+                    aux.append([self.__activation[i][0].numpy(), math.multiply(transpose(self.__activation[i-1]), self.weights[k][0]).numpy()])
+        else:
+            aux = [[], [], [], []]
+
+        return aux
 
     def load_model(self, file):
         self.__model_base = load_model(file)
 
         for i, k in zip(range(len(self.__model_base.layers)), self.__weights.keys()):
             w, b = self.__model_base.layers[i].get_weights()
-            self.__weights[k] = [Variable(w, name=f"F_{i}/W"), Variable(b, name=f"F_{i}/B")]
+
+            if k == "OUTPUT":
+                self.__weights[k] = [Variable(w, name="OUTPUT/W"), Variable(b, name=f"OUTPUT/B")]
+            else:
+                self.__weights[k] = [Variable(w, name=f"F_{i}/W"), Variable(b, name=f"F_{i}/B")]
+
+        self.__trainable = self.__get_weights()
 
     def save(self, file):
         for i, k in zip(range(len(self.__model_base.layers)), self.__weights.keys()):
