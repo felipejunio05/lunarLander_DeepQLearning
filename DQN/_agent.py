@@ -58,8 +58,8 @@ class Agent:
     def store_transition(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)
 
-    def choose_action(self, state):
-        if random() < self.epsilon:
+    def choose_action(self, state, training=True):
+        if training and random() < self.epsilon:
             action = choice(self.__actionSpace)
         else:
             actions = self.__q_eval.predict(state.reshape(1, -1))
@@ -68,7 +68,7 @@ class Agent:
         return action
 
     def learn(self):
-        if self.__memory.men_states["count"] > self.__batchSize or self.__memory.men_states["full"]:
+        if self.__memory.index > self.__batchSize or self.__memory.exceededMemory():
             states, actions, rewards, next_states, dones = self.__memory.sample_buffer(self.__batchSize)
 
             q_eval = self.__q_eval.predict(states, True)
@@ -78,7 +78,12 @@ class Agent:
             q_eval[batch_index, actions] = rewards + self.gamma * q_next.max(axis=1) * dones
 
             self.__q_eval.train(states, q_eval)
-            self.__epsilon = self.epsilon - self.__epsDec if self.epsilon > self.__epsMin else self.__epsMin
+
+            if (self.epsilon - self.__epsDec) > self.__epsMin:
+                self.__epsilon = self.epsilon - self.__epsDec
+            else:
+                if not self.__epsilon == self.__epsMin:
+                    self.__epsilon = self.__epsMin
 
     def save_model(self):
         self.__q_eval.save(self.__saveIn)
@@ -113,6 +118,7 @@ class Agent:
 
                 if view is not None:
                     view.gymRender = env.render(mode="rgb_array")
+                    view.agentActivation = self.__q_eval.getActivation()
 
                 self.store_transition(state, action, reward, new_state, done)
                 self.learn()
@@ -129,7 +135,6 @@ class Agent:
                 imgGraph = graph.plot(episode, epsilons, avg_score)
 
             if view is not None:
-                view.agentActivation = self.__q_eval.getActivation()
                 view.episode(str(episode + 1).zfill(2))
 
                 if graph is not None:
